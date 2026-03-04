@@ -4,7 +4,32 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Marco &amp; Beatrice – Zukunftsdashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
+// Upgrade listeners (null-safe)
+(document.getElementById('btnHeatmap')||{}).addEventListener?.('click', ()=>{ 
+  if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){ if(typeof showLock==='function') showLock('Bitte PIN eingeben.'); return; }
+  openHeatmap();
+});
+(document.getElementById('btnHeatClose')||{}).addEventListener?.('click', ()=>{ document.getElementById('heatOverlay').style.display='none'; });
+(document.getElementById('heatOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='heatOverlay') document.getElementById('heatOverlay').style.display='none'; });
+
+(document.getElementById('btnRebalance')||{}).addEventListener?.('click', ()=>{ 
+  if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){ if(typeof showLock==='function') showLock('Bitte PIN eingeben.'); return; }
+  openRebalance();
+});
+(document.getElementById('btnRebClose')||{}).addEventListener?.('click', ()=>{ document.getElementById('rebOverlay').style.display='none'; });
+(document.getElementById('rebOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='rebOverlay') document.getElementById('rebOverlay').style.display='none'; });
+(document.getElementById('btnRebCalc')||{}).addEventListener?.('click', calcRebalance);
+
+(document.getElementById('btnFI')||{}).addEventListener?.('click', ()=>{ 
+  if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){ if(typeof showLock==='function') showLock('Bitte PIN eingeben.'); return; }
+  openFI();
+});
+(document.getElementById('btnFIClose')||{}).addEventListener?.('click', ()=>{ document.getElementById('fiOverlay').style.display='none'; });
+(document.getElementById('fiOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='fiOverlay') document.getElementById('fiOverlay').style.display='none'; });
+(document.getElementById('btnFICalc')||{}).addEventListener?.('click', calcFI);
+
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0e1a; color: #e8eaf0; min-height: 100vh; }
@@ -1229,7 +1254,29 @@ async function refreshPrices(opts={silent:false}){
       errors.push(f.label + ": " + (e?.message || "Fehler"));
     }
   }
+
+  // finalize
+  try{
+    if(updated){
+      await saveConfig();
+    }
+  } catch(e){
+    // ignore if locked; UI still updates for current session
+  }
+  applyAllRenders();
+
+  if(!opts.silent){
+    if(errors.length){
+      toast('Update teilweise fehlgeschlagen: ' + errors.slice(0,2).join(' · ') + (errors.length>2?' …':''));
+    } else if(updated){
+      toast('Preise aktualisiert ✅');
+    } else {
+      toast('Keine Updates (Symbole/IDs prüfen)');
+    }
+  }
+
 }
+
 
 function renderPlansTable(){
   const tbody = document.getElementById('plansBody');
@@ -1918,14 +1965,14 @@ function showTab(name, el){
   setTimeout(()=>{ Object.values(charts).forEach(c=> c && c.resize()); }, 80);
 }
 
-(document.getElementById('btnRefresh')||{}).addEventListener?.('click', ()=> refreshPrices({silent:false}));
+document.getElementById('btnRefresh').addEventListener('click', ()=> refreshPrices({silent:false}));
 
-(document.getElementById('btnSave')||{}).addEventListener?.('click', async ()=>{
+document.getElementById('btnSave').addEventListener('click', async ()=>{
   try{ await saveConfig(); toast('Gespeichert'); }
   catch(e){ toast('Bitte zuerst entsperren'); }
 });
 
-(document.getElementById('btnReset')||{}).addEventListener?.('click', async ()=>{
+document.getElementById('btnReset').addEventListener('click', async ()=>{
   CONFIG = structuredClone(DEFAULT);
   try{ await saveConfig(); } catch(e){}
   localStorage.removeItem(ENC_KEY);
@@ -1937,7 +1984,7 @@ function showTab(name, el){
   toast('Zurückgesetzt');
 });
 
-(document.getElementById('btnExport')||{}).addEventListener?.('click', async ()=>{
+document.getElementById('btnExport').addEventListener('click', async ()=>{
   if(requirePin() && !isUnlocked()){ toast('Bitte entsperren'); return; }
   const txt = JSON.stringify(CONFIG, null, 2);
   try{ await navigator.clipboard.writeText(txt); toast('Export kopiert'); } catch(e){ toast('Export erstellt'); }
@@ -1945,17 +1992,17 @@ function showTab(name, el){
   showTab('einstellungen', document.querySelectorAll('.tab')[5]);
 });
 
-(document.getElementById('btnImport')||{}).addEventListener?.('click', ()=>{
+document.getElementById('btnImport').addEventListener('click', ()=>{
   showTab('einstellungen', document.querySelectorAll('.tab')[4]);
   toast('Füge JSON ein und klicke „Aus Box laden“ ⇧');
 });
 
-(document.getElementById('btnCopyJSON')||{}).addEventListener?.('click', async ()=>{
+document.getElementById('btnCopyJSON').addEventListener('click', async ()=>{
   const txt = document.getElementById('jsonBox').value.trim();
   try{ await navigator.clipboard.writeText(txt); toast('Kopiert 📋'); } catch(e){ toast('Konnte nicht kopieren (Browser)'); }
 });
 
-(document.getElementById('btnLoadJSON')||{}).addEventListener?.('click', ()=>{
+document.getElementById('btnLoadJSON').addEventListener('click', ()=>{
   try{
     const txt = document.getElementById('jsonBox').value.trim();
     const obj = JSON.parse(txt);
@@ -1990,7 +2037,7 @@ function showTab(name, el){
   }
 });
 
-(document.getElementById('btnApplyCfg')||{}).addEventListener?.('click', async ()=>{
+document.getElementById('btnApplyCfg').addEventListener('click', async ()=>{
   // cash
   CONFIG.cash.giro = clamp(numDE(document.getElementById('cfgGiro').value), 0, 1e12);
   CONFIG.cash.sparbuch = clamp(numDE(document.getElementById('cfgSparbuch').value), 0, 1e12);
@@ -2038,20 +2085,14 @@ function showTab(name, el){
   // sync controls
   document.getElementById('rateSlider').value = CONFIG.forecast.rate;
 
-  try{
-    await saveConfig();
-  } catch(e){
-    toast('Bitte zuerst entsperren (PIN)');
-    if(typeof showLock==='function') showLock('Bitte PIN eingeben.');
-    return;
-  }
+  await saveConfig();
   renderSettings();
   applyAllRenders();
   toast('Einstellungen übernommen ✅');
   refreshPrices({silent:true});
 });
 
-(document.getElementById('btnApplyCrypto')||{}).addEventListener?.('click', ()=>{
+document.getElementById('btnApplyCrypto').addEventListener('click', ()=>{
   let btc = clamp(numDE(document.getElementById('inBTC').value), 0, 100);
   let eth = clamp(numDE(document.getElementById('inETH').value), 0, 100);
   let sol = clamp(numDE(document.getElementById('inSOL').value), 0, 100);
@@ -2077,7 +2118,7 @@ function showTab(name, el){
   refreshPrices({silent:true});
 });
 
-(document.getElementById('rateSlider')||{}).addEventListener?.('input', (e)=>{
+document.getElementById('rateSlider').addEventListener('input', (e)=>{
   CONFIG.forecast.rate = clamp(numDE(e.target.value), 0, 15);
   saveConfig();
   renderForecastControls();
@@ -2088,7 +2129,7 @@ function showTab(name, el){
   renderSettings();
 });
 
-(document.getElementById('inYears')||{}).addEventListener?.('change', (e)=>{
+document.getElementById('inYears').addEventListener('change', (e)=>{
   CONFIG.forecast.years = clamp(Math.round(numDE(e.target.value)), 1, 50);
   saveConfig();
   renderForecastControls();
@@ -2098,7 +2139,7 @@ function showTab(name, el){
   renderHeader();
   renderSettings();
 });
-(document.getElementById('inInflation')||{}).addEventListener?.('change', (e)=>{
+document.getElementById('inInflation').addEventListener('change', (e)=>{
   CONFIG.forecast.inflation = clamp(numDE(e.target.value), 0, 10);
   saveConfig();
   renderForecastControls();
@@ -2108,14 +2149,14 @@ function showTab(name, el){
   renderHeader();
   renderSettings();
 });
-(document.getElementById('inRefresh')||{}).addEventListener?.('change', (e)=>{
+document.getElementById('inRefresh').addEventListener('change', (e)=>{
   CONFIG.forecast.refreshMinutes = clamp(Math.round(numDE(e.target.value)), 0, 1440);
   saveConfig();
   setupAutoRefresh();
   toast('Auto-Refresh aktualisiert');
 });
 
-(document.getElementById('btnRunMC')||{}).addEventListener?.('click', ()=>{
+document.getElementById('btnRunMC').addEventListener('click', ()=>{
   const arr = monteCarloEndValues();
   window.__mcEndValues = arr;
 
@@ -2204,245 +2245,6 @@ document.getElementById('btnAddFundRow')?.addEventListener('click', ()=>{
   // first refresh (silent)
   try{ await refreshPrices({silent:true}); } catch(e){}
 })();
-
-
-/* =====================
-   Portfolio-Heatmap
-===================== */
-function _pct(x){ return (x*100).toFixed(1).replace('.',',') + '%'; }
-function _clamp01(x){ return Math.max(0, Math.min(1, x)); }
-function _heatBg(v){
-  const t=_clamp01(v);
-  const r=Math.round(239*(1-t)+34*t), g=Math.round(68*(1-t)+197*t), b=Math.round(68*(1-t)+94*t);
-  return `rgba(${r},${g},${b},0.18)`;
-}
-function _heatBorder(v){
-  const t=_clamp01(v);
-  const r=Math.round(239*(1-t)+34*t), g=Math.round(68*(1-t)+197*t), b=Math.round(68*(1-t)+94*t);
-  return `rgba(${r},${g},${b},0.35)`;
-}
-
-function _allocation(){
-  const cash = numDE(CONFIG.cash?.giro) + numDE(CONFIG.cash?.sparbuch);
-  const etf = numDE(CONFIG.investments?.etf?.units) * numDE(CONFIG.investments?.etf?.price || CONFIG.investments?.etf?.priceManual);
-  const vb  = numDE(CONFIG.investments?.volksbank?.units) * numDE(CONFIG.investments?.volksbank?.price || CONFIG.investments?.volksbank?.priceManual);
-  const deka= numDE(CONFIG.investments?.deka?.units) * numDE(CONFIG.investments?.deka?.price || CONFIG.investments?.deka?.priceManual);
-  const extra = (CONFIG.investments?.extraFunds||[]).reduce((a,f)=> a + (numDE(f.units) * numDE(f.price || f.priceManual)), 0);
-  const funds = vb + deka + extra;
-  const cp = CONFIG.crypto?.prices || {btc:0,eth:0,sol:0,stable:1};
-  const crypto = numDE(CONFIG.crypto?.holdings?.btc)*numDE(cp.btc)
-               + numDE(CONFIG.crypto?.holdings?.eth)*numDE(cp.eth)
-               + numDE(CONFIG.crypto?.holdings?.sol)*numDE(cp.sol)
-               + numDE(CONFIG.crypto?.holdings?.stable)*numDE(cp.stable);
-  const stocks = etf;
-  const total = cash + stocks + funds + crypto;
-  return { cash, stocks, funds, crypto, total: total||1 };
-}
-
-function openHeatmap(){
-  const ov = document.getElementById('heatOverlay');
-  if(!ov) return;
-  ov.style.display='flex';
-  const g = document.getElementById('heatGrid');
-  if(!g) return;
-  g.innerHTML = '';
-
-  const a = _allocation();
-  const cls = [
-    {k:'cash', name:'Cash', v:a.cash, score:null},
-    {k:'stocks', name:'Aktien/ETF', v:a.stocks, score:null},
-    {k:'funds', name:'Fonds', v:a.funds, score:null},
-    {k:'crypto', name:'Krypto', v:a.crypto, score:null},
-  ];
-
-  const ratings = (typeof __lastRatings !== 'undefined' && __lastRatings) ? __lastRatings.filter(r=>!r.error) : [];
-  const avg = (arr)=> arr.length? arr.reduce((x,y)=>x+y,0)/arr.length : null;
-  const stockScores = ratings.filter(r=>r.source==='Stooq' && /ETF|Depot|Aktie/i.test(r.label)).map(r=>r.score);
-  const fundScores  = ratings.filter(r=>r.source==='Stooq' && /Fonds/i.test(r.label)).map(r=>r.score);
-  const cryptoScores= ratings.filter(r=>r.source==='CoinGecko').map(r=>r.score);
-  cls.find(x=>x.k==='stocks').score = avg(stockScores);
-  cls.find(x=>x.k==='funds').score = avg(fundScores);
-  cls.find(x=>x.k==='crypto').score = avg(cryptoScores);
-
-  const head = document.createElement('div');
-  head.className='hm-cell hm-head';
-  head.innerHTML = `<div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-    <div>Klasse</div><div>Allokation</div><div>Wert</div><div>Score (36M)</div>
-  </div>`;
-  g.appendChild(head);
-
-  cls.forEach(c=>{
-    const pct = c.v/a.total;
-    const s01 = c.score==null ? 0.5 : (c.score/100);
-    const cell = document.createElement('div');
-    cell.className='hm-cell';
-    cell.style.background = _heatBg(s01);
-    cell.style.borderColor = _heatBorder(s01);
-    cell.innerHTML = `
-      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-        <div class="hm-title">${c.name}</div>
-        <div class="muted">${_pct(pct)}</div>
-        <div class="amount">${EUR.format(c.v)}</div>
-        <div class="muted">${c.score==null?'—':Math.round(c.score)}</div>
-      </div>
-      <div class="hm-sub">${c.score==null?'Tipp: erst „Bewertung 36M“ berechnen (wo möglich).':''}</div>
-    `;
-    g.appendChild(cell);
-  });
-}
-
-/* =====================
-   Rebalancing (zielbasiert)
-===================== */
-const TARGET_KEY = 'mbzd_targets_v1';
-function loadTargets(){
-  try{ return JSON.parse(localStorage.getItem(TARGET_KEY)||'null') || {cash:10, stocks:55, funds:25, crypto:10}; }catch(e){ return {cash:10, stocks:55, funds:25, crypto:10}; }
-}
-function saveTargets(t){ localStorage.setItem(TARGET_KEY, JSON.stringify(t)); }
-
-function openRebalance(){
-  const ov = document.getElementById('rebOverlay');
-  if(!ov) return;
-  ov.style.display='flex';
-  const t = loadTargets();
-  document.getElementById('tgCash')?.setAttribute('value','');
-  document.getElementById('tgCash').value = Math.round(t.cash);
-  document.getElementById('tgStocks').value = Math.round(t.stocks);
-  document.getElementById('tgFunds').value = Math.round(t.funds);
-  document.getElementById('tgCrypto').value = Math.round(t.crypto);
-  calcRebalance();
-}
-
-function calcRebalance(){
-  const el = (id)=>document.getElementById(id);
-  if(!el('rebBody')) return;
-  let tc = numDE(el('tgCash')?.value);
-  let ts = numDE(el('tgStocks')?.value);
-  let tf = numDE(el('tgFunds')?.value);
-  let tk = numDE(el('tgCrypto')?.value);
-  let sum = tc+ts+tf+tk;
-  if(sum<=0){ tc=10; ts=55; tf=25; tk=10; sum=100; }
-  const k = 100/sum; tc*=k; ts*=k; tf*=k; tk*=k;
-  saveTargets({cash:tc, stocks:ts, funds:tf, crypto:tk});
-
-  const a = _allocation();
-  const total = a.total;
-  const monthly = (typeof monthlyTotal==='function') ? monthlyTotal() : 0;
-
-  const rows = [
-    {name:'Cash', cur:a.cash, tgt:tc/100},
-    {name:'Aktien/ETF', cur:a.stocks, tgt:ts/100},
-    {name:'Fonds', cur:a.funds, tgt:tf/100},
-    {name:'Krypto', cur:a.crypto, tgt:tk/100},
-  ];
-
-  const body = el('rebBody');
-  body.innerHTML = '';
-  rows.forEach(r=>{
-    const curPct = r.cur/total;
-    const diff = r.tgt - curPct;
-    const oneTime = diff * total;
-    const monthlyAdj = diff * monthly;
-    const tr=document.createElement('tr');
-    tr.innerHTML = `
-      <td><strong>${r.name}</strong></td>
-      <td class="muted">${_pct(curPct)}</td>
-      <td class="muted">${_pct(r.tgt)}</td>
-      <td><span class="amount" style="color:${diff>=0?'#4ade80':'#ef4444'}">${_pct(diff)}</span></td>
-      <td class="muted">${oneTime>=0?('+'+EUR.format(Math.abs(oneTime))):('-'+EUR.format(Math.abs(oneTime)))}</td>
-      <td class="muted">${monthlyAdj>=0?('+'+EUR.format(Math.abs(monthlyAdj))):('-'+EUR.format(Math.abs(monthlyAdj)))}</td>
-    `;
-    body.appendChild(tr);
-  });
-}
-
-/* =====================
-   Finanzielle Freiheit
-===================== */
-function openFI(){
-  const ov = document.getElementById('fiOverlay');
-  if(!ov) return;
-  ov.style.display='flex';
-  document.getElementById('fiSpend').value = 30000;
-  document.getElementById('fiMult').value = 25;
-  document.getElementById('fiStart').value = Math.round(_allocation().total);
-  document.getElementById('fiRate').value = numDE(CONFIG.forecast?.rate) || 7.0;
-  document.getElementById('fiVol').value = numDE(CONFIG.montecarlo?.vol) || 18.0;
-  document.getElementById('fiSims').value = numDE(CONFIG.montecarlo?.sims) || 3000;
-  calcFI();
-}
-
-function _yearsToGoalDet(start, monthly, ratePct, goal){
-  const r = ratePct/100;
-  const rm = Math.pow(1+r, 1/12)-1;
-  let cap = start;
-  for(let m=1;m<=12*80;m++){
-    cap = (cap + monthly) * (1+rm);
-    if(cap>=goal) return m/12;
-  }
-  return null;
-}
-
-function _yearsToGoalMC(start, monthly, muPct, volPct, goal, sims){
-  const mu = muPct/100;
-  const vol = volPct/100;
-  const rm_mu = Math.pow(1+mu, 1/12)-1;
-  const rm_vol = vol/Math.sqrt(12);
-
-  function randn(){ let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
-
-  const ys=[];
-  for(let s=0;s<sims;s++){
-    let cap=start, y=null;
-    for(let m=1;m<=12*80;m++){
-      const rr = rm_mu + rm_vol*randn();
-      cap = (cap + monthly) * (1+rr);
-      if(cap<0) cap=0;
-      if(cap>=goal){ y=m/12; break; }
-    }
-    ys.push(y==null?999:y);
-  }
-  ys.sort((a,b)=>a-b);
-  const q50 = ys[Math.floor(0.50*(ys.length-1))];
-  const q95 = ys[Math.floor(0.95*(ys.length-1))];
-  return {q50,q95};
-}
-
-function calcFI(){
-  const spend = numDE(document.getElementById('fiSpend').value);
-  const mult = numDE(document.getElementById('fiMult').value);
-  const goal = spend*mult;
-  const start = numDE(document.getElementById('fiStart').value) || _allocation().total;
-  const rate = numDE(document.getElementById('fiRate').value);
-  const vol = numDE(document.getElementById('fiVol').value);
-  const sims = Math.max(200, Math.min(20000, Math.round(numDE(document.getElementById('fiSims').value))));
-  const monthly = (typeof monthlyTotal==='function') ? monthlyTotal() : 0;
-
-  document.getElementById('fiTarget').textContent = EUR.format(goal);
-  document.getElementById('fiMonthly').textContent = EUR.format(monthly);
-
-  const det = _yearsToGoalDet(start, monthly, rate, goal);
-  document.getElementById('fiYearsDet').textContent = det==null?'—':(det.toFixed(1).replace('.',',')+' J');
-
-  const mc = _yearsToGoalMC(start, monthly, rate, vol, goal, sims);
-  document.getElementById('fiYearsMed').textContent = mc.q50>=999?'—':(mc.q50.toFixed(1).replace('.',',')+' J');
-  document.getElementById('fiYears95').textContent = mc.q95>=999?'—':(mc.q95.toFixed(1).replace('.',',')+' J');
-}
-
-// Upgrade listeners
-(document.getElementById('btnHeatmap')||{}).addEventListener?.('click', openHeatmap);
-(document.getElementById('btnHeatClose')||{}).addEventListener?.('click', ()=>{ const o=document.getElementById('heatOverlay'); if(o) o.style.display='none'; });
-(document.getElementById('heatOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='heatOverlay'){ e.currentTarget.style.display='none'; }});
-
-(document.getElementById('btnRebalance')||{}).addEventListener?.('click', openRebalance);
-(document.getElementById('btnRebClose')||{}).addEventListener?.('click', ()=>{ const o=document.getElementById('rebOverlay'); if(o) o.style.display='none'; });
-(document.getElementById('rebOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='rebOverlay'){ e.currentTarget.style.display='none'; }});
-(document.getElementById('btnRebCalc')||{}).addEventListener?.('click', calcRebalance);
-
-(document.getElementById('btnFI')||{}).addEventListener?.('click', openFI);
-(document.getElementById('btnFIClose')||{}).addEventListener?.('click', ()=>{ const o=document.getElementById('fiOverlay'); if(o) o.style.display='none'; });
-(document.getElementById('fiOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='fiOverlay'){ e.currentTarget.style.display='none'; }});
-(document.getElementById('btnFICalc')||{}).addEventListener?.('click', calcFI);
 </script>
 
   <!-- Heatmap Modal -->
