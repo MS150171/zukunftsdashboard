@@ -2085,11 +2085,28 @@ document.getElementById('btnApplyCfg').addEventListener('click', async ()=>{
   // sync controls
   document.getElementById('rateSlider').value = CONFIG.forecast.rate;
 
-  await saveConfig();
+  let saved = true;
+  try{
+    await saveConfig();
+  } catch(e){
+    saved = false;
+    // If PIN is enabled and we are locked, ask for unlock
+    try{
+      if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){
+        if(typeof showLock==='function') showLock('Bitte PIN eingeben, um Änderungen zu speichern.');
+      }
+    } catch(_){}
+  }
+
   renderSettings();
   applyAllRenders();
-  toast('Einstellungen übernommen ✅');
-  refreshPrices({silent:true});
+
+  if(saved){
+    toast('Einstellungen übernommen ✅');
+    refreshPrices({silent:true});
+  } else {
+    toast('Einstellungen übernommen (nicht gespeichert) — bitte entsperren');
+  }
 });
 
 document.getElementById('btnApplyCrypto').addEventListener('click', ()=>{
