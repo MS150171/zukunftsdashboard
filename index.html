@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Marco &amp; Beatrice – Zukunftsdashboard</title>
+<!-- build:v3.6-github -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
 // Upgrade listeners (null-safe)
 (document.getElementById('btnHeatmap')||{}).addEventListener?.('click', ()=>{ 
@@ -172,6 +173,7 @@
       <button class="btn primary" id="btnSave">Speichern</button>
       <button class="btn" id="btnReset">Reset</button>
       <button class="btn" id="btnExport">Export</button>
+          <button class="btn warn" id="btnHardReload">Cache-Reset</button>
       <button class="btn" id="btnImport">Import</button>
     </div>
   </div>
@@ -1944,85 +1946,6 @@ function closeAdvice(){
 }
 
 
-
-/* =====================
-   UI Render helpers (missing-safe)
-===================== */
-function renderHeader(){
-  // date + pills
-  const dEl = document.getElementById('currentDate');
-  if(dEl){
-    const d = new Date();
-    dEl.textContent = d.toLocaleDateString('de-DE', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-  }
-
-  const nw = netWorthNow();
-  const m = monthlyTotal();
-  const y = m*12;
-
-  const pill = (id, val)=>{ const el=document.getElementById(id); if(el) el.textContent=val; };
-  pill('pillNetWorth', EUR.format(nw));
-  pill('pillMonthly', EUR.format(m));
-  pill('pillYearly', EUR.format(y));
-  pill('pillRisk', getRiskLabel());
-
-  // Prices info
-  const pEl = document.getElementById('pillPrices');
-  if(pEl){
-    const t = [];
-    if(CONFIG.investments?.etf?.updatedAt) t.push('ETF');
-    if(CONFIG.investments?.volksbank?.updatedAt) t.push('VB');
-    if(CONFIG.investments?.deka?.updatedAt) t.push('DEKA');
-    const extras = (CONFIG.investments?.extraFunds||[]).filter(f=>f.updatedAt).length;
-    if(extras) t.push(`Fonds(${extras})`);
-    if(CONFIG.crypto?.updatedAt) t.push('Krypto');
-    pEl.textContent = t.length ? ('OK: ' + t.join(' · ')) : '—';
-  }
-}
-
-function renderOverviewCards(){
-  const nw = netWorthNow();
-  const m = monthlyTotal();
-  const y = m*12;
-  const cash = valueCash();
-  const invest = valueETF() + valueFund('volksbank') + valueFund('deka');
-  const crypto = valueCrypto();
-  const target = numDE(CONFIG.forecast?.target);
-
-  const set = (id, val)=>{ const el=document.getElementById(id); if(el) el.textContent=val; };
-  set('sumNetWorth', EUR.format(nw));
-  set('sumMonthly', EUR.format(m));
-  set('sumCash', EUR.format(cash));
-  set('sumPlans', EUR.format(invest + crypto));
-  set('sumTarget', target ? EUR.format(target) : '—';
-
-  // table
-  set('tblMonthly', EUR.format(m));
-  const yEl = document.getElementById('tblYearly'); if(yEl) yEl.textContent = '≈ ' + EUR.format(y) + ' / Jahr';
-  set('tblNet', EUR.format(nw));
-  const rateEl = document.getElementById('tblRate');
-  if(rateEl){
-    const r = numDE(CONFIG.forecast?.rate);
-    rateEl.textContent = r ? (r.toFixed(2).replace('.',',') + '%') : '—';
-  }
-  // horizon quick summary
-  const hz = numDE(CONFIG.forecast?.years);
-  const hzEl = document.getElementById('tblHorizon');
-  if(hzEl) hzEl.textContent = hz ? (String(hz).replace('.',',') + ' Jahre') : '—';
-  const cEl = document.getElementById('tblContrib');
-  if(cEl) cEl.textContent = m>0 ? ('Beiträge: ' + EUR.format(m*12*(hz||0))) : '—';
-}
-
-function renderProgress(){
-  // Optional: if progress bar elements exist, update them; otherwise noop.
-  // (Kein harter Abbruch wenn Elemente fehlen)
-  const el = document.getElementById('notePreview');
-  if(el){
-    const nw = netWorthNow();
-    el.textContent = nw>0 ? ('Aktuell: ' + EUR.format(nw)) : '';
-  }
-}
-
 function applyAllRenders(){
   renderHeader();
   renderOverviewCards();
@@ -2341,6 +2264,22 @@ document.getElementById('btnAddFundRow')?.addEventListener('click', ()=>{
   // first refresh (silent)
   try{ await refreshPrices({silent:true}); } catch(e){}
 })();
+
+// Hard reload helper (clears service worker cache)
+(document.getElementById('btnHardReload')||{}).addEventListener?.('click', async ()=>{
+  try{
+    if('serviceWorker' in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+    }
+    if('caches' in window){
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k=>caches.delete(k)));
+    }
+  } catch(e){}
+  location.reload(true);
+});
+
 </script>
 
   <!-- Heatmap Modal -->
