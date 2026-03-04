@@ -80,6 +80,7 @@
   .row { display:flex; align-items:center; justify-content:space-between; gap: 12px; flex-wrap: wrap; }
   .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .grid-3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .grid-5 { display:grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
   .grid-4 { display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
   .field { display:flex; flex-direction:column; gap:6px; }
   .field label { font-size: 12px; color:#9ca3af; }
@@ -277,8 +278,41 @@
       <div class="banner"><div>
           <strong>Aufteilung</strong>
           <span id="cryptoSplitHint">–</span>
+        
+        <div class="summary-card">
+          <div class="label">Netto-Haushaltseinkommen</div>
+          <div class="value" id="sumIncome">–</div>
+          <div class="sub neutral">Monat (Person 1 + 2)</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Verbindlichkeiten</div>
+          <div class="value" id="sumLiab">–</div>
+          <div class="sub neutral">Restschulden gesamt</div>
+        </div>
+</div>
+      
+      <div class="card" style="margin-top:14px;">
+        <div class="section-title">Kurse (Dashboard)</div>
+        <div class="mini" style="color:#9ca3af; margin-bottom:10px;">5 Unternehmen (Watchlist), Fonds/ETF aus dem Sparbereich und Bitcoin.</div>
+        <div class="savings-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Instrument</th>
+                <th>Symbol/ID</th>
+                <th>Kurs</th>
+                <th>Letztes Update</th>
+              </tr>
+            </thead>
+            <tbody id="quotesBody"></tbody>
+          </table>
+        </div>
+        <div class="row" style="justify-content:flex-end; margin-top:10px;">
+          <button class="btn" id="btnQuotesRefresh">Kurse aktualisieren</button>
         </div>
       </div>
+
+</div>
 
       <div class="card">
         <div class="grid-4">
@@ -424,7 +458,21 @@
           </div>
         </div>
 
+        
         <div class="divider"></div>
+
+        <div class="section-title">Netto-Haushaltseinkommen (monatlich)</div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Person 1 Netto (€ / Monat)</label>
+            <input id="cfgIncome1" type="number" min="0" step="50" />
+          </div>
+          <div class="field">
+            <label>Person 2 Netto (€ / Monat)</label>
+            <input id="cfgIncome2" type="number" min="0" step="50" />
+          </div>
+        </div>
+<div class="divider"></div>
 
         <div class="section-title">Investments (Bestand + Sparrate)</div>
         <div class="grid-2">
@@ -569,7 +617,44 @@
           <div class="mini">
             Änderungen wirken sofort. <span id="notePreview"></span>
           </div>
-          <div class="row" style="justify-content:flex-end;">
+          
+      <div class="card" style="margin-top:14px;">
+        <div class="section-title">Verbindlichkeiten</div>
+        <div class="mini" style="color:#9ca3af; margin-bottom:10px;">Füge hier Kredite, Immobiliendarlehen oder Kreditkarten-Salden hinzu. Diese werden im Nettovermögen abgezogen.</div>
+
+        <div class="savings-table" style="margin-bottom:10px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Typ</th>
+                <th>Restschuld (€)</th>
+                <th>Rate (€ / Monat, optional)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="liabBody"></tbody>
+          </table>
+        </div>
+
+        <div class="row" style="justify-content:flex-end;">
+          <button class="btn" id="btnAddLiab">+ Verbindlichkeit</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div class="section-title">Watchlist (5 Unternehmen)</div>
+        <div class="mini" style="color:#9ca3af; margin-bottom:10px;">Symbole für Stooq (z.B. <code>sap.de</code>). Diese Kurse werden im Dashboard angezeigt.</div>
+        <div class="grid-5">
+          <div class="field"><label>Symbol 1</label><input id="cfgWatch1" type="text" placeholder="sap.de"></div>
+          <div class="field"><label>Symbol 2</label><input id="cfgWatch2" type="text" placeholder="sie.de"></div>
+          <div class="field"><label>Symbol 3</label><input id="cfgWatch3" type="text" placeholder="alv.de"></div>
+          <div class="field"><label>Symbol 4</label><input id="cfgWatch4" type="text" placeholder="dte.de"></div>
+          <div class="field"><label>Symbol 5</label><input id="cfgWatch5" type="text" placeholder="bmw.de"></div>
+        </div>
+      </div>
+
+<div class="row" style="justify-content:flex-end;">
             <button class="btn primary" id="btnApplyCfg">Anwenden</button>
           </div>
         </div>
@@ -774,6 +859,14 @@ const DEFAULT = {
   montecarlo: {
     vol: 18.0,      // % p.a. (heuristic)
     sims: 3000
+  },
+  income: { net1: 0, net2: 0 }, // monatliches Netto-Einkommen pro Person
+  liabilities: [
+    // { name: "Immobiliendarlehen", type: "mortgage", balance: 0, rateMonthly: 0 }
+  ],
+  watchlist: {
+    // 5 DAX-Unternehmen (Symbole für Stooq, z.B. sap.de)
+    symbols: ["sap.de","sie.de","alv.de","dte.de","bmw.de"]
   },
   meta: {
     note: ""
@@ -2372,6 +2465,189 @@ document.getElementById('btnAddFundRow')?.addEventListener('click', ()=>{
     }
   } catch(e){}
   location.reload(true);
+});
+
+
+/* =====================
+   Einkommen + Verbindlichkeiten + Dashboard-Kurse
+===================== */
+function totalIncomeMonthly(){
+  return numDE(CONFIG.income?.net1) + numDE(CONFIG.income?.net2);
+}
+function totalLiabilities(){
+  return (CONFIG.liabilities||[]).reduce((a,l)=> a + numDE(l.balance), 0);
+}
+function renderLiabilities(){
+  const body = document.getElementById('liabBody');
+  if(!body) return;
+  body.innerHTML = '';
+  (CONFIG.liabilities||[]).forEach((l, idx)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input data-li="${idx}" data-lk="name" value="${(l.name||'')}" placeholder="z.B. Immobiliendarlehen" style="width:220px"></td>
+      <td>
+        <select data-li="${idx}" data-lk="type" style="width:160px">
+          <option value="mortgage" ${(l.type||'mortgage')==='mortgage'?'selected':''}>Immobiliendarlehen</option>
+          <option value="loan" ${(l.type||'mortgage')==='loan'?'selected':''}>Kredit</option>
+          <option value="creditcard" ${(l.type||'mortgage')==='creditcard'?'selected':''}>Kreditkarte</option>
+          <option value="other" ${(l.type||'mortgage')==='other'?'selected':''}>Sonstiges</option>
+        </select>
+      </td>
+      <td><input data-li="${idx}" data-lk="balance" type="number" min="0" step="100" value="${numDE(l.balance)}" style="width:160px"></td>
+      <td><input data-li="${idx}" data-lk="rateMonthly" type="number" min="0" step="10" value="${numDE(l.rateMonthly)}" style="width:180px"></td>
+      <td><button class="btn warn" data-act="rmLiab" data-li="${idx}" style="padding:8px 10px;">Entfernen</button></td>
+    `;
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll('input,select').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const i = Number(el.getAttribute('data-li'));
+      const k = el.getAttribute('data-lk');
+      if(!CONFIG.liabilities[i]) return;
+      const v = (el.type==='number') ? numDE(el.value) : (el.value||'').trim();
+      CONFIG.liabilities[i][k] = v;
+    });
+  });
+  body.querySelectorAll('button[data-act="rmLiab"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const i = Number(btn.getAttribute('data-li'));
+      CONFIG.liabilities = (CONFIG.liabilities||[]).filter((_,x)=>x!==i);
+      renderLiabilities();
+      applyAllRenders();
+    });
+  });
+}
+
+async function renderQuotes(){
+  const body = document.getElementById('quotesBody');
+  if(!body) return;
+  body.innerHTML = '';
+  const rows = [];
+
+  // Watchlist (5 Unternehmen)
+  const syms = (CONFIG.watchlist?.symbols||[]).slice(0,5).filter(Boolean);
+  syms.forEach(s=> rows.push({name: s.toUpperCase(), id:s, kind:'stooq'}));
+
+  // Fonds/ETF aus Sparbereich
+  if(CONFIG.investments?.etf?.provider==='stooq' && CONFIG.investments.etf.symbol){
+    rows.push({name:'ETF/Depot', id: CONFIG.investments.etf.symbol, kind:'stooq'});
+  }
+  const addFundRow = (label, obj)=>{
+    if(!obj) return;
+    if(obj.provider==='stooq' && obj.symbol) rows.push({name:label, id:obj.symbol, kind:'stooq'});
+    else if(obj.provider==='deka' && obj.fundNo) rows.push({name:label, id:obj.fundNo, kind:'deka'});
+    else if(obj.provider==='union' && obj.fundNo) rows.push({name:label, id:obj.fundNo, kind:'union'});
+  };
+  addFundRow('Volksbank Fonds', CONFIG.investments?.volksbank);
+  addFundRow('Deka Fonds', CONFIG.investments?.deka);
+  (CONFIG.investments?.extraFunds||[]).forEach((f,i)=> addFundRow(f.name||(`Fonds ${i+1}`), f));
+
+  // Bitcoin
+  rows.push({name:'Bitcoin', id:'bitcoin', kind:'coingecko'});
+
+  // Deduplicate
+  const seen = new Set();
+  const uniq = rows.filter(r=>{
+    const k = r.kind+':'+r.id;
+    if(seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
+  const nowStr = () => new Date().toLocaleString('de-DE');
+
+  for(const r of uniq){
+    let price = null;
+    let updated = null;
+    try{
+      if(r.kind==='stooq'){
+        price = await fetchStooqLastPrice(r.id);
+        updated = Date.now();
+      } else if(r.kind==='coingecko'){
+        const p = await fetchCoinGeckoPrice('bitcoin');
+        price = p;
+        updated = Date.now();
+      } else if(r.kind==='deka'){
+        const p = await fetchDekaPrice(r.id);
+        price = p;
+        updated = Date.now();
+      } else if(r.kind==='union'){
+        const p = await fetchUnionPrice(r.id);
+        price = p;
+        updated = Date.now();
+      }
+    } catch(e){}
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${r.name}</strong></td>
+      <td class="muted">${r.id}</td>
+      <td>${price==null || !Number.isFinite(price) ? '<span class="muted">—</span>' : '<span class="amount">'+EUR.format(price)+'</span>'}</td>
+      <td class="muted">${updated? nowStr() : '—'}</td>
+    `;
+    body.appendChild(tr);
+  }
+}
+
+// Patch net worth to subtract liabilities
+const __netWorthNow_orig = netWorthNow;
+netWorthNow = function(){
+  return __netWorthNow_orig() - totalLiabilities();
+};
+
+// Extend renderOverviewCards to show income + liabilities if fields exist
+const __renderOverviewCards_orig = renderOverviewCards;
+renderOverviewCards = function(){
+  __renderOverviewCards_orig();
+  const inc = totalIncomeMonthly();
+  const liab = totalLiabilities();
+  const elI = document.getElementById('sumIncome'); if(elI) elI.textContent = EUR.format(inc);
+  const elL = document.getElementById('sumLiab'); if(elL) elL.textContent = EUR.format(liab);
+};
+
+// Ensure applyAllRenders also renders new sections
+const __applyAllRenders_orig = applyAllRenders;
+applyAllRenders = function(){
+  __applyAllRenders_orig();
+  renderLiabilities();
+  renderQuotes();
+};
+
+// Settings: load values into new inputs
+const __fillSettings_orig = fillSettings;
+fillSettings = function(){
+  __fillSettings_orig();
+  const i1 = document.getElementById('cfgIncome1'); if(i1) i1.value = numDE(CONFIG.income?.net1)||0;
+  const i2 = document.getElementById('cfgIncome2'); if(i2) i2.value = numDE(CONFIG.income?.net2)||0;
+  const w = (CONFIG.watchlist?.symbols||[]);
+  const ws = [document.getElementById('cfgWatch1'),document.getElementById('cfgWatch2'),document.getElementById('cfgWatch3'),document.getElementById('cfgWatch4'),document.getElementById('cfgWatch5')];
+  ws.forEach((el,idx)=>{ if(el) el.value = (w[idx]||''); });
+  renderLiabilities();
+};
+
+// Settings: apply new fields when clicking Apply
+const __applySettings_orig = applySettings;
+applySettings = function(){
+  __applySettings_orig();
+  CONFIG.income = CONFIG.income || {net1:0,net2:0};
+  const i1 = document.getElementById('cfgIncome1'); if(i1) CONFIG.income.net1 = numDE(i1.value);
+  const i2 = document.getElementById('cfgIncome2'); if(i2) CONFIG.income.net2 = numDE(i2.value);
+  CONFIG.watchlist = CONFIG.watchlist || {symbols:[]};
+  const ws = [document.getElementById('cfgWatch1'),document.getElementById('cfgWatch2'),document.getElementById('cfgWatch3'),document.getElementById('cfgWatch4'),document.getElementById('cfgWatch5')];
+  CONFIG.watchlist.symbols = ws.map(el=> (el && el.value ? el.value.trim().toLowerCase() : '')).filter(Boolean).slice(0,5);
+  // liabilities already bound live via renderLiabilities
+};
+
+// Buttons
+(document.getElementById('btnAddLiab')||{}).addEventListener?.('click', ()=>{
+  CONFIG.liabilities = CONFIG.liabilities || [];
+  CONFIG.liabilities.push({name:'', type:'loan', balance:0, rateMonthly:0});
+  renderLiabilities();
+});
+(document.getElementById('btnQuotesRefresh')||{}).addEventListener?.('click', async ()=>{
+  await refreshPrices({silent:false});
+  await renderQuotes();
 });
 
 </script>
