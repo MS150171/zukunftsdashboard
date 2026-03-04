@@ -5,116 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Marco &amp; Beatrice – Zukunftsdashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
-/* =====================
-   Mapping Helper (ID -> Symbol)
-===================== */
-const MAP_KEY = 'mbzd_map_v1';
-
-function loadMap(){
-  try{ return JSON.parse(localStorage.getItem(MAP_KEY) || '[]'); } catch(e){ return []; }
-}
-function saveMap(rows){
-  localStorage.setItem(MAP_KEY, JSON.stringify(rows));
-}
-
-function renderMap(){
-  const body = document.getElementById('mapBody');
-  if(!body) return;
-  const rows = loadMap();
-  body.innerHTML = '';
-  rows.forEach((r, i)=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><input data-mi="${i}" data-mk="id" value="${(r.id||'')}" placeholder="z.B. DE000..." style="width:220px"/></td>
-      <td>
-        <select data-mi="${i}" data-mk="type" style="width:150px">
-          <option value="stooq" ${(r.type||'stooq')==='stooq'?'selected':''}>Stooq</option>
-          <option value="cg" ${(r.type||'stooq')==='cg'?'selected':''}>CoinGecko</option>
-        </select>
-      </td>
-      <td><input data-mi="${i}" data-mk="symbol" value="${(r.symbol||'')}" placeholder="Symbol / Coin-ID" style="width:240px"/></td>
-      <td><button class="btn warn" data-action="rmMap" data-mi="${i}" style="padding:8px 10px;">Entfernen</button></td>
-    `;
-    body.appendChild(tr);
-  });
-
-  body.querySelectorAll('input,select').forEach(el=>{
-    el.addEventListener('change', ()=>{
-      const i = Number(el.getAttribute('data-mi'));
-      const k = el.getAttribute('data-mk');
-      const rows2 = loadMap();
-      if(!rows2[i]) return;
-      rows2[i][k] = (el.value||'').trim();
-      saveMap(rows2);
-    });
-  });
-
-  body.querySelectorAll('button[data-action="rmMap"]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const i = Number(btn.getAttribute('data-mi'));
-      const rows2 = loadMap().filter((_,idx)=>idx!==i);
-      saveMap(rows2);
-      renderMap();
-    });
-  });
-}
-
-function applyMapToFunds(){
-  const rows = loadMap();
-  const lookup = new Map(rows.filter(r=>r.id && r.symbol).map(r=>[r.id.trim().toUpperCase(), r]));
-  // apply to extra funds
-  (CONFIG.investments.extraFunds||[]).forEach(f=>{
-    const id = (f.fundNo||'').trim().toUpperCase();
-    const hit = lookup.get(id);
-    if(hit && hit.type==='stooq'){
-      f.provider = 'stooq';
-      f.symbol = hit.symbol;
-    }
-  });
-  // apply to holdings (Bestände)
-  (CONFIG.holdings||[]).forEach(h=>{
-    const id = (h.fundNo||'').trim().toUpperCase();
-    const hit = lookup.get(id);
-    if(hit){
-      if(hit.type==='stooq' && (h.type==='fund' || h.type==='stock')){
-        h.symbol = hit.symbol;
-      }
-      if(hit.type==='cg' && h.type==='crypto'){
-        h.symbol = hit.symbol;
-      }
-    }
-  });
-  saveConfig().catch(()=>{});
-  applyAllRenders();
-  toast('Mapping angewendet');
-}
-
-function openMapping(){
-  document.getElementById('mapOverlay').style.display='flex';
-  renderMap();
-}
-function closeMapping(){
-  document.getElementById('mapOverlay').style.display='none';
-}
-
-
-// Mapping listeners
-(document.getElementById('btnMapping')||{}).addEventListener?.('click', ()=>{ 
-  if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){ 
-    if(typeof showLock==='function') showLock('Bitte PIN eingeben.'); 
-    return; 
-  }
-  openMapping();
+// Upgrade listeners (null-safe)
+(document.getElementById('btnHeatmap')||{}).addEventListener?.('click', ()=>{ 
+  if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){ if(typeof showLock==='function') showLock('Bitte PIN eingeben.'); return; }
+  openHeatmap();
 });
-(document.getElementById('btnMapClose')||{}).addEventListener?.('click', closeMapping);
-(document.getElementById('mapOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='mapOverlay') closeMapping(); });
-(document.getElementById('btnMapAdd')||{}).addEventListener?.('click', ()=>{ 
-  const rows = loadMap(); 
-  rows.push({id:'', type:'stooq', symbol:''}); 
-  saveMap(rows); 
-  renderMap();
+(document.getElementById('btnHeatClose')||{}).addEventListener?.('click', ()=>{ document.getElementById('heatOverlay').style.display='none'; });
+(document.getElementById('heatOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='heatOverlay') document.getElementById('heatOverlay').style.display='none'; });
+
+(document.getElementById('btnRebalance')||{}).addEventListener?.('click', ()=>{ 
+  if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){ if(typeof showLock==='function') showLock('Bitte PIN eingeben.'); return; }
+  openRebalance();
 });
-(document.getElementById('btnMapApply')||{}).addEventListener?.('click', applyMapToFunds);
+(document.getElementById('btnRebClose')||{}).addEventListener?.('click', ()=>{ document.getElementById('rebOverlay').style.display='none'; });
+(document.getElementById('rebOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='rebOverlay') document.getElementById('rebOverlay').style.display='none'; });
+(document.getElementById('btnRebCalc')||{}).addEventListener?.('click', calcRebalance);
+
+(document.getElementById('btnFI')||{}).addEventListener?.('click', ()=>{ 
+  if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){ if(typeof showLock==='function') showLock('Bitte PIN eingeben.'); return; }
+  openFI();
+});
+(document.getElementById('btnFIClose')||{}).addEventListener?.('click', ()=>{ document.getElementById('fiOverlay').style.display='none'; });
+(document.getElementById('fiOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='fiOverlay') document.getElementById('fiOverlay').style.display='none'; });
+(document.getElementById('btnFICalc')||{}).addEventListener?.('click', calcFI);
 
 </script>
 <style>
@@ -222,6 +135,14 @@ function closeMapping(){
   .tag.good { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.25); }
   .tag.mid { background: rgba(234,179,8,0.12); border-color: rgba(234,179,8,0.25); }
   .tag.bad { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.25); }
+
+  /* Upgrades */
+  .hm-cell{ padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.10); }
+  .hm-grid{ display:grid; grid-template-columns: 1fr; gap:12px; }
+  .hm-head{ color:#9ca3af; font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+  .hm-title{ font-weight:800; color:#e8eaf0; }
+  .hm-sub{ color:#9ca3af; font-size:12px; margin-top:4px; }
+
 </style>
 
 <link rel="manifest" href="manifest.json">
@@ -2022,14 +1943,14 @@ function showTab(name, el){
   setTimeout(()=>{ Object.values(charts).forEach(c=> c && c.resize()); }, 80);
 }
 
-(document.getElementById('btnRefresh')||{}).addEventListener?.('click', ()=> refreshPrices({silent:false}));
+document.getElementById('btnRefresh').addEventListener('click', ()=> refreshPrices({silent:false}));
 
-(document.getElementById('btnSave')||{}).addEventListener?.('click', async ()=>{
+document.getElementById('btnSave').addEventListener('click', async ()=>{
   try{ await saveConfig(); toast('Gespeichert'); }
   catch(e){ toast('Bitte zuerst entsperren'); }
 });
 
-(document.getElementById('btnReset')||{}).addEventListener?.('click', async ()=>{
+document.getElementById('btnReset').addEventListener('click', async ()=>{
   CONFIG = structuredClone(DEFAULT);
   try{ await saveConfig(); } catch(e){}
   localStorage.removeItem(ENC_KEY);
@@ -2041,7 +1962,7 @@ function showTab(name, el){
   toast('Zurückgesetzt');
 });
 
-(document.getElementById('btnExport')||{}).addEventListener?.('click', async ()=>{
+document.getElementById('btnExport').addEventListener('click', async ()=>{
   if(requirePin() && !isUnlocked()){ toast('Bitte entsperren'); return; }
   const txt = JSON.stringify(CONFIG, null, 2);
   try{ await navigator.clipboard.writeText(txt); toast('Export kopiert'); } catch(e){ toast('Export erstellt'); }
@@ -2049,17 +1970,17 @@ function showTab(name, el){
   showTab('einstellungen', document.querySelectorAll('.tab')[5]);
 });
 
-(document.getElementById('btnImport')||{}).addEventListener?.('click', ()=>{
+document.getElementById('btnImport').addEventListener('click', ()=>{
   showTab('einstellungen', document.querySelectorAll('.tab')[4]);
   toast('Füge JSON ein und klicke „Aus Box laden“ ⇧');
 });
 
-(document.getElementById('btnCopyJSON')||{}).addEventListener?.('click', async ()=>{
+document.getElementById('btnCopyJSON').addEventListener('click', async ()=>{
   const txt = document.getElementById('jsonBox').value.trim();
   try{ await navigator.clipboard.writeText(txt); toast('Kopiert 📋'); } catch(e){ toast('Konnte nicht kopieren (Browser)'); }
 });
 
-(document.getElementById('btnLoadJSON')||{}).addEventListener?.('click', ()=>{
+document.getElementById('btnLoadJSON').addEventListener('click', ()=>{
   try{
     const txt = document.getElementById('jsonBox').value.trim();
     const obj = JSON.parse(txt);
@@ -2094,7 +2015,7 @@ function showTab(name, el){
   }
 });
 
-(document.getElementById('btnApplyCfg')||{}).addEventListener?.('click', async ()=>{
+document.getElementById('btnApplyCfg').addEventListener('click', async ()=>{
   // cash
   CONFIG.cash.giro = clamp(numDE(document.getElementById('cfgGiro').value), 0, 1e12);
   CONFIG.cash.sparbuch = clamp(numDE(document.getElementById('cfgSparbuch').value), 0, 1e12);
@@ -2149,7 +2070,7 @@ function showTab(name, el){
   refreshPrices({silent:true});
 });
 
-(document.getElementById('btnApplyCrypto')||{}).addEventListener?.('click', ()=>{
+document.getElementById('btnApplyCrypto').addEventListener('click', ()=>{
   let btc = clamp(numDE(document.getElementById('inBTC').value), 0, 100);
   let eth = clamp(numDE(document.getElementById('inETH').value), 0, 100);
   let sol = clamp(numDE(document.getElementById('inSOL').value), 0, 100);
@@ -2175,7 +2096,7 @@ function showTab(name, el){
   refreshPrices({silent:true});
 });
 
-(document.getElementById('rateSlider')||{}).addEventListener?.('input', (e)=>{
+document.getElementById('rateSlider').addEventListener('input', (e)=>{
   CONFIG.forecast.rate = clamp(numDE(e.target.value), 0, 15);
   saveConfig();
   renderForecastControls();
@@ -2186,7 +2107,7 @@ function showTab(name, el){
   renderSettings();
 });
 
-(document.getElementById('inYears')||{}).addEventListener?.('change', (e)=>{
+document.getElementById('inYears').addEventListener('change', (e)=>{
   CONFIG.forecast.years = clamp(Math.round(numDE(e.target.value)), 1, 50);
   saveConfig();
   renderForecastControls();
@@ -2196,7 +2117,7 @@ function showTab(name, el){
   renderHeader();
   renderSettings();
 });
-(document.getElementById('inInflation')||{}).addEventListener?.('change', (e)=>{
+document.getElementById('inInflation').addEventListener('change', (e)=>{
   CONFIG.forecast.inflation = clamp(numDE(e.target.value), 0, 10);
   saveConfig();
   renderForecastControls();
@@ -2206,14 +2127,14 @@ function showTab(name, el){
   renderHeader();
   renderSettings();
 });
-(document.getElementById('inRefresh')||{}).addEventListener?.('change', (e)=>{
+document.getElementById('inRefresh').addEventListener('change', (e)=>{
   CONFIG.forecast.refreshMinutes = clamp(Math.round(numDE(e.target.value)), 0, 1440);
   saveConfig();
   setupAutoRefresh();
   toast('Auto-Refresh aktualisiert');
 });
 
-(document.getElementById('btnRunMC')||{}).addEventListener?.('click', ()=>{
+document.getElementById('btnRunMC').addEventListener('click', ()=>{
   const arr = monteCarloEndValues();
   window.__mcEndValues = arr;
 
@@ -2304,44 +2225,103 @@ document.getElementById('btnAddFundRow')?.addEventListener('click', ()=>{
 })();
 </script>
 
-  <!-- Mapping Modal -->
-  <div class="modal-overlay" id="mapOverlay" aria-modal="true" role="dialog">
+  <!-- Heatmap Modal -->
+  <div class="modal-overlay" id="heatOverlay" aria-modal="true" role="dialog">
     <div class="modal-card">
       <div class="modal-head">
         <div>
-          <div class="modal-title">ID → Symbol Mapping</div>
-          <div class="modal-sub">Hilft dir, ISIN/WKN/Fond-ID manuell einem Stooq-Symbol oder CoinGecko Coin-ID zuzuordnen, damit 36M-Bewertung funktioniert.</div>
+          <div class="modal-title">Portfolio-Heatmap</div>
+          <div class="modal-sub">Allokation + Score/Risiko (wenn 36M-Daten verfügbar).</div>
         </div>
         <div class="row" style="justify-content:flex-end;">
-          <button class="btn" id="btnMapClose">Schließen</button>
+          <button class="btn" id="btnHeatClose">Schließen</button>
+        </div>
+      </div>
+      <div class="hm-grid" id="heatGrid"></div>
+      <div class="mini" style="margin-top:12px;color:#9ca3af;">Hinweis: Historische Daten ≠ Zukunft. Keine Anlageberatung.</div>
+    </div>
+  </div>
+
+  <!-- Rebalancing Modal -->
+  <div class="modal-overlay" id="rebOverlay" aria-modal="true" role="dialog">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">Rebalancing-Empfehlung</div>
+          <div class="modal-sub">Ist vs. Ziel-Allokation (heuristisch).</div>
+        </div>
+        <div class="row" style="justify-content:flex-end;">
+          <button class="btn" id="btnRebClose">Schließen</button>
         </div>
       </div>
 
-      <div class="mini" style="margin-bottom:10px;color:#9ca3af;">
-        Tipp: Für Fonds/Aktien brauchst du ein Stooq-Symbol (z.B. <code>AAPL.US</code>). Für Krypto eine Coin-ID (z.B. <code>bitcoin</code>).
+      <div class="card" style="margin-bottom:14px;">
+        <div class="section-title">Ziel-Allokation</div>
+        <div class="grid-4">
+          <div class="field"><label>Cash (%)</label><input id="tgCash" type="number" min="0" max="100" step="1"></div>
+          <div class="field"><label>Aktien/ETF (%)</label><input id="tgStocks" type="number" min="0" max="100" step="1"></div>
+          <div class="field"><label>Fonds (%)</label><input id="tgFunds" type="number" min="0" max="100" step="1"></div>
+          <div class="field"><label>Krypto (%)</label><input id="tgCrypto" type="number" min="0" max="100" step="1"></div>
+        </div>
+        <div class="row" style="margin-top:12px; justify-content:flex-end;">
+          <button class="btn primary" id="btnRebCalc">Berechnen</button>
+        </div>
       </div>
 
       <div class="savings-table">
         <table>
           <thead>
             <tr>
-              <th>ID (ISIN/WKN/Fond-ID)</th>
-              <th>Typ</th>
-              <th>Symbol / Coin-ID</th>
-              <th>Aktion</th>
+              <th>Klasse</th>
+              <th>Ist</th>
+              <th>Ziel</th>
+              <th>Abweichung</th>
+              <th>1x Umschichtung</th>
+              <th>Monatlich</th>
             </tr>
           </thead>
-          <tbody id="mapBody"></tbody>
+          <tbody id="rebBody"></tbody>
         </table>
       </div>
+      <div class="mini" style="margin-top:12px;color:#9ca3af;">Keine Steuern/Spreads berücksichtigt. Keine Anlageberatung.</div>
+    </div>
+  </div>
 
-      <div class="row" style="margin-top:14px; justify-content:flex-end;">
-        <button class="btn primary" id="btnMapAdd">Zeile hinzufügen</button>
-        <button class="btn" id="btnMapApply">Auf Fonds anwenden</button>
+  <!-- Finanzielle Freiheit Modal -->
+  <div class="modal-overlay" id="fiOverlay" aria-modal="true" role="dialog">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">Finanzielle Freiheit</div>
+          <div class="modal-sub">Ziel (Ausgaben × Multiple) + Zeit bis Ziel (Deterministisch + Monte Carlo).</div>
+        </div>
+        <div class="row" style="justify-content:flex-end;">
+          <button class="btn" id="btnFIClose">Schließen</button>
+        </div>
       </div>
 
-      <div class="mini" style="margin-top:10px;color:#9ca3af;">
-        „Auf Fonds anwenden“ setzt bei <strong>Weitere Fonds</strong> automatisch Provider=Stooq, wenn ein Mapping vorhanden ist.
+      <div class="card">
+        <div class="grid-3">
+          <div class="field"><label>Jahresausgaben (€)</label><input id="fiSpend" type="number" min="0" step="500"></div>
+          <div class="field"><label>FI-Multiple</label><input id="fiMult" type="number" min="10" max="50" step="1"></div>
+          <div class="field"><label>Startvermögen (optional)</label><input id="fiStart" type="number" min="0" step="1000"></div>
+        </div>
+        <div class="grid-3" style="margin-top:14px;">
+          <div class="field"><label>Rendite p.a. (%)</label><input id="fiRate" type="number" min="0" max="20" step="0.1"></div>
+          <div class="field"><label>Volatilität p.a. (%)</label><input id="fiVol" type="number" min="0" max="80" step="0.5"></div>
+          <div class="field"><label>Simulationen</label><input id="fiSims" type="number" min="200" max="20000" step="200"></div>
+        </div>
+        <div class="row" style="margin-top:12px; justify-content:flex-end;">
+          <button class="btn primary" id="btnFICalc">Berechnen</button>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card"><div class="label">FI-Ziel</div><div class="value" id="fiTarget">—</div><div class="sub neutral">Ausgaben × Multiple</div></div>
+        <div class="summary-card"><div class="label">Monatlich</div><div class="value" id="fiMonthly">—</div><div class="sub neutral">Sparrate gesamt</div></div>
+        <div class="summary-card"><div class="label">Deterministisch</div><div class="value" id="fiYearsDet">—</div><div class="sub neutral">Jahre bis Ziel</div></div>
+        <div class="summary-card"><div class="label">MC Median</div><div class="value" id="fiYearsMed">—</div><div class="sub neutral">50% Quantil</div></div>
+        <div class="summary-card"><div class="label">MC 95%</div><div class="value" id="fiYears95">—</div><div class="sub neutral">„schlechter Pfad“</div></div>
       </div>
     </div>
   </div>

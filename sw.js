@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mbzd-cache-v3';
+const CACHE_NAME = 'mbzd-cache-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -28,6 +28,22 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
+
+    // Network-first for page navigations (ensures updates), fallback to cache
+    if (event.request.mode === 'navigate') {
+      try {
+        const fresh = await fetch(event.request);
+        if (new URL(event.request.url).origin === self.location.origin) {
+          cache.put(event.request, fresh.clone());
+        }
+        return fresh;
+      } catch (e) {
+        const cached = await cache.match('./index.html');
+        return cached || Response.error();
+      }
+    }
+
+    // Cache-first for other requests
     const cached = await cache.match(event.request);
     if (cached) return cached;
 
