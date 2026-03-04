@@ -1946,6 +1946,100 @@ function closeAdvice(){
 }
 
 
+
+function renderHeader(){
+  const now = new Date();
+  const d = document.getElementById('currentDate');
+  if(d) d.textContent = now.toLocaleDateString('de-DE', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  const nw = netWorthNow();
+  const m = monthlyTotal();
+  const y = m * 12;
+
+  const pNW = document.getElementById('pillNetWorth'); if(pNW) pNW.textContent = EUR.format(nw);
+  const pM  = document.getElementById('pillMonthly'); if(pM) pM.textContent = EUR.format(m);
+  const pY  = document.getElementById('pillYearly'); if(pY) pY.textContent = EUR.format(y);
+  const pR  = document.getElementById('pillRisk'); if(pR) pR.textContent = getRiskLabel();
+
+  const pP  = document.getElementById('pillPrices');
+  if(pP){
+    const t = latestPriceTimestamp();
+    pP.textContent = t ? new Date(t).toLocaleString('de-DE') : '—';
+  }
+}
+
+function renderOverviewCards(){
+  const nw = netWorthNow();
+  const m = monthlyTotal();
+  const plans =
+    (numDE(CONFIG.investments.etf.monthly)>0?1:0) +
+    (numDE(CONFIG.investments.volksbank.monthly)>0?1:0) +
+    (numDE(CONFIG.investments.deka.monthly)>0?1:0) +
+    (numDE(CONFIG.crypto.monthly)>0?1:0);
+
+  const cash = valueCash();
+
+  const elNW = document.getElementById('sumNetWorth'); if(elNW) elNW.textContent = EUR.format(nw);
+  const elM  = document.getElementById('sumMonthly'); if(elM) elM.textContent = EUR.format(m);
+  const elP  = document.getElementById('sumPlans'); if(elP) elP.textContent = String(plans);
+  const elC  = document.getElementById('sumCash'); if(elC) elC.textContent = EUR.format(cash);
+
+  // Target based on forecast settings (simple horizon compounding of current net worth + monthly)
+  const years = Math.max(1, Math.round(numDE(CONFIG.forecast.years) || 20));
+  const rate = (numDE(CONFIG.forecast.rate) || 6) / 100;
+  const rm = Math.pow(1+rate, 1/12)-1;
+  let cap = nw;
+  for(let i=0;i<years*12;i++){
+    cap = (cap + m) * (1+rm);
+  }
+  const elT = document.getElementById('sumTarget'); if(elT) elT.textContent = EUR.format(cap);
+}
+
+function renderProgress(){
+  const wrap = document.getElementById('progressWrap');
+  if(!wrap) return;
+
+  const cash = valueCash();
+  const etf  = valueETF();
+  const funds = valueFund('volksbank') + valueFund('deka');
+  const crypto = valueCrypto();
+  const total = cash + etf + funds + crypto;
+
+  const rows = [
+    {label:'Cash', value:cash},
+    {label:'Aktien/ETF', value:etf},
+    {label:'Fonds', value:funds},
+    {label:'Krypto', value:crypto},
+  ];
+
+  wrap.innerHTML = '';
+  rows.forEach(r=>{
+    const pct = total ? (r.value/total) : 0;
+    const row = document.createElement('div');
+    row.style.marginBottom = '10px';
+    row.innerHTML = `
+      <div class="row" style="justify-content:space-between;">
+        <div class="muted">${r.label}</div>
+        <div class="muted">${(pct*100).toFixed(1).replace('.',',')}% · <span class="amount">${EUR.format(r.value)}</span></div>
+      </div>
+      <div style="height:10px; border-radius:999px; background: rgba(255,255,255,0.08); overflow:hidden; margin-top:6px;">
+        <div style="height:10px; width:${(pct*100).toFixed(2)}%; background: rgba(96,165,250,0.65);"></div>
+      </div>
+    `;
+    wrap.appendChild(row);
+  });
+}
+
+function latestPriceTimestamp(){
+  const ts = [];
+  if(CONFIG.investments?.etf?.updatedAt) ts.push(CONFIG.investments.etf.updatedAt);
+  if(CONFIG.investments?.volksbank?.updatedAt) ts.push(CONFIG.investments.volksbank.updatedAt);
+  if(CONFIG.investments?.deka?.updatedAt) ts.push(CONFIG.investments.deka.updatedAt);
+  if(CONFIG.crypto?.updatedAt) ts.push(CONFIG.crypto.updatedAt);
+  if(ts.length===0) return null;
+  return Math.max(...ts.map(x=>Number(x)||0));
+}
+
 function applyAllRenders(){
   renderHeader();
   renderOverviewCards();
