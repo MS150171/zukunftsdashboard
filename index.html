@@ -5,32 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Marco &amp; Beatrice – Zukunftsdashboard</title>
 <!-- build:v3.6-github -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
-// Upgrade listeners (null-safe)
-(document.getElementById('btnHeatmap')||{}).addEventListener?.('click', ()=>{ 
-  if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){ if(typeof showLock==='function') showLock('Bitte PIN eingeben.'); return; }
-  openHeatmap();
-});
-(document.getElementById('btnHeatClose')||{}).addEventListener?.('click', ()=>{ document.getElementById('heatOverlay').style.display='none'; });
-(document.getElementById('heatOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='heatOverlay') document.getElementById('heatOverlay').style.display='none'; });
-
-(document.getElementById('btnRebalance')||{}).addEventListener?.('click', ()=>{ 
-  if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){ if(typeof showLock==='function') showLock('Bitte PIN eingeben.'); return; }
-  openRebalance();
-});
-(document.getElementById('btnRebClose')||{}).addEventListener?.('click', ()=>{ document.getElementById('rebOverlay').style.display='none'; });
-(document.getElementById('rebOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='rebOverlay') document.getElementById('rebOverlay').style.display='none'; });
-(document.getElementById('btnRebCalc')||{}).addEventListener?.('click', calcRebalance);
-
-(document.getElementById('btnFI')||{}).addEventListener?.('click', ()=>{ 
-  if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){ if(typeof showLock==='function') showLock('Bitte PIN eingeben.'); return; }
-  openFI();
-});
-(document.getElementById('btnFIClose')||{}).addEventListener?.('click', ()=>{ document.getElementById('fiOverlay').style.display='none'; });
-(document.getElementById('fiOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='fiOverlay') document.getElementById('fiOverlay').style.display='none'; });
-(document.getElementById('btnFICalc')||{}).addEventListener?.('click', calcFI);
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0e1a; color: #e8eaf0; min-height: 100vh; }
@@ -2650,6 +2625,31 @@ applySettings = function(){
   await renderQuotes();
 });
 
+
+/* Restored inline code (moved from Chart.js tag) */
+// Upgrade listeners (null-safe)
+(document.getElementById('btnHeatmap')||{}).addEventListener?.('click', ()=>{ 
+  if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){ if(typeof showLock==='function') showLock('Bitte PIN eingeben.'); return; }
+  openHeatmap();
+});
+(document.getElementById('btnHeatClose')||{}).addEventListener?.('click', ()=>{ document.getElementById('heatOverlay').style.display='none'; });
+(document.getElementById('heatOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='heatOverlay') document.getElementById('heatOverlay').style.display='none'; });
+
+(document.getElementById('btnRebalance')||{}).addEventListener?.('click', ()=>{ 
+  if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){ if(typeof showLock==='function') showLock('Bitte PIN eingeben.'); return; }
+  openRebalance();
+});
+(document.getElementById('btnRebClose')||{}).addEventListener?.('click', ()=>{ document.getElementById('rebOverlay').style.display='none'; });
+(document.getElementById('rebOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='rebOverlay') document.getElementById('rebOverlay').style.display='none'; });
+(document.getElementById('btnRebCalc')||{}).addEventListener?.('click', calcRebalance);
+
+(document.getElementById('btnFI')||{}).addEventListener?.('click', ()=>{ 
+  if(typeof requirePin==='function' && requirePin() && !(typeof isUnlocked==='function' && isUnlocked())){ if(typeof showLock==='function') showLock('Bitte PIN eingeben.'); return; }
+  openFI();
+});
+(document.getElementById('btnFIClose')||{}).addEventListener?.('click', ()=>{ document.getElementById('fiOverlay').style.display='none'; });
+(document.getElementById('fiOverlay')||{}).addEventListener?.('click', (e)=>{ if(e.target && e.target.id==='fiOverlay') document.getElementById('fiOverlay').style.display='none'; });
+(document.getElementById('btnFICalc')||{}).addEventListener?.('click', calcFI);
 </script>
 
   <!-- Heatmap Modal -->

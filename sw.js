@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mbzd-cache-v6';
+const CACHE_NAME = 'mbzd-cache-v7';
 const ASSETS = [
   './',
   './index.html',
