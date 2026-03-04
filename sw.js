@@ -1,8 +1,11 @@
-const CACHE_NAME = 'mbzd-cache-v1';
+const CACHE_NAME = 'mbzd-cache-v3';
 const ASSETS = [
-  './Marco-und-Beatrice-Zukunftsdashboard-App.html',
+  './',
+  './index.html',
   './manifest.json',
+  './sw.js',
   './icon.svg',
+  './apple-touch-icon.png',
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'
 ];
 
@@ -23,19 +26,18 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  const req = event.request;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(req);
-    if(cached) return cached;
-    try{
-      const fresh = await fetch(req);
-      // cache same-origin only
-      if(new URL(req.url).origin === location.origin){
-        cache.put(req, fresh.clone());
+    const cached = await cache.match(event.request);
+    if (cached) return cached;
+
+    try {
+      const fresh = await fetch(event.request);
+      if (new URL(event.request.url).origin === self.location.origin) {
+        cache.put(event.request, fresh.clone());
       }
       return fresh;
-    } catch(e){
+    } catch (e) {
       return cached || Response.error();
     }
   })());
